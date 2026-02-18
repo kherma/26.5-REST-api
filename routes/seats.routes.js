@@ -4,6 +4,14 @@ const db = require('../db');
 
 const router = express.Router();
 
+const isSlotTaken = (day, seat, excludedId = null) =>
+  db.seats.some(
+    (seatItem) =>
+      String(seatItem.day) === String(day) &&
+      String(seatItem.seat) === String(seat) &&
+      (excludedId === null || String(seatItem.id) !== String(excludedId))
+  );
+
 router.get('/seats', (req, res) => {
   res.json(db.seats);
 });
@@ -28,6 +36,10 @@ router.post('/seats', (req, res) => {
       .json({ message: 'day, seat, client and email required' });
   }
 
+  if (isSlotTaken(day, seat)) {
+    return res.status(409).json({ message: 'The slot is already taken...' });
+  }
+
   const newItem = { id: uuidv4(), day, seat, client, email };
   db.seats.push(newItem);
 
@@ -47,6 +59,10 @@ router.put('/seats/:id', (req, res) => {
     return res
       .status(400)
       .json({ message: 'day, seat, client and email required' });
+  }
+
+  if (isSlotTaken(day, seat, id)) {
+    return res.status(409).json({ message: 'The slot is already taken...' });
   }
 
   item.day = day;
