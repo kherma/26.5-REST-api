@@ -3,15 +3,7 @@ const app = express();
 const port = 3000;
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-
-const db = [
-  { id: 1, author: 'John Doe', text: 'This company is worth every coin!' },
-  {
-    id: 2,
-    author: 'Amanda Doe',
-    text: 'They really know how to make you happy.',
-  },
-];
+const db = require('./db');
 
 app.use(cors());
 app.use(express.json());
@@ -23,19 +15,19 @@ app.get('/', (req, res) => {
 
 // Return all testimonials
 app.get('/testimonials', (req, res) => {
-  res.json(db);
+  res.json(db.testimonials);
 });
 
 // Return a random testimonial
 app.get('/testimonials/random', (req, res) => {
-  const index = Math.floor(Math.random() * db.length);
-  res.json(db[index]);
+  const index = Math.floor(Math.random() * db.testimonials.length);
+  res.json(db.testimonials[index]);
 });
 
 // Return testimonial by id
 app.get('/testimonials/:id', (req, res) => {
   const id = req.params.id;
-  const item = db.find((t) => String(t.id) === id);
+  const item = db.testimonials.find((t) => String(t.id) === id);
   if (!item) {
     return res.status(404).json({ message: 'Not found' });
   }
@@ -50,7 +42,7 @@ app.post('/testimonials', (req, res) => {
   }
   const id = uuidv4();
   const newItem = { id, author, text };
-  db.push(newItem);
+  db.testimonials.push(newItem);
   res.json({ message: 'OK' });
 });
 
@@ -58,7 +50,7 @@ app.post('/testimonials', (req, res) => {
 app.put('/testimonials/:id', (req, res) => {
   const idParam = req.params.id;
   const { author, text } = req.body;
-  const item = db.find((t) => String(t.id) === idParam);
+  const item = db.testimonials.find((t) => String(t.id) === idParam);
   if (!item) {
     return res.status(404).json({ message: 'Not found' });
   }
@@ -73,11 +65,11 @@ app.put('/testimonials/:id', (req, res) => {
 // Delete testimonial by id
 app.delete('/testimonials/:id', (req, res) => {
   const idParam = req.params.id;
-  const index = db.findIndex((t) => String(t.id) === idParam);
+  const index = db.testimonials.findIndex((t) => String(t.id) === idParam);
   if (index === -1) {
     return res.status(404).json({ message: 'Not found' });
   }
-  db.splice(index, 1);
+  db.testimonials.splice(index, 1);
   res.json({ message: 'OK' });
 });
 
