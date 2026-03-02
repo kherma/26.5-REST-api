@@ -6,6 +6,7 @@ import { getSeats, loadSeats } from '../../../redux/seatsRedux';
 import './SeatChooser.scss';
 
 const SeatChooser = ({ chosenDay, chosenSeat, updateSeat }) => {
+  const TOTAL_SEATS = 50;
   const dispatch = useDispatch();
   const seats = useSelector(getSeats);
 
@@ -27,6 +28,10 @@ const SeatChooser = ({ chosenDay, chosenSeat, updateSeat }) => {
   const isTaken = (seatId) => {
     return seats.some((item) => item.seat === seatId && item.day === chosenDay);
   };
+  const takenSeatsCount = seats.filter(
+    (item) => String(item.day) === String(chosenDay)
+  ).length;
+  const freeSeatsCount = TOTAL_SEATS - takenSeatsCount;
 
   const prepareSeat = (seatId) => {
     if (seatId === chosenSeat)
@@ -67,8 +72,9 @@ const SeatChooser = ({ chosenDay, chosenSeat, updateSeat }) => {
         </small>
       </div>
       <div className='seats'>
-        {[...Array(50)].map((x, i) => prepareSeat(i + 1))}
+        {[...Array(TOTAL_SEATS)].map((x, i) => prepareSeat(i + 1))}
       </div>
+      <p className='mt-3'>Free seats: {freeSeatsCount}/{TOTAL_SEATS}</p>
     </div>
   );
 };
