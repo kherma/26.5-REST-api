@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+const db = require('./db');
 
 const testimonialsRoutes = require('./routes/testimonials.routes');
 const concertsRoutes = require('./routes/concerts.routes');
@@ -45,6 +46,7 @@ app.use((req, res) => {
 
 io.on('connection', (socket) => {
   console.log('New socket!');
+  socket.emit('seatsUpdated', db.seats);
 
   socket.on('disconnect', () => {
     console.log(`Socket disconnected: ${socket.id}`);
