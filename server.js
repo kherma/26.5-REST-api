@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const http = require('http');
+const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 const db = require('./db');
 
@@ -11,6 +12,7 @@ const seatsRoutes = require('./routes/seats.routes');
 
 const app = express();
 const port = process.env.PORT || 8000;
+const mongoUri = 'mongodb://127.0.0.1:27017/NewWaveDB';
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -53,6 +55,14 @@ io.on('connection', (socket) => {
   });
 });
 
-httpServer.listen(port, () => {
-  console.log(`Server is running on port: ${port}`);
-});
+mongoose
+  .connect(mongoUri)
+  .then(() => {
+    console.log(`Connected to MongoDB: ${mongoUri}`);
+    httpServer.listen(port, () => {
+      console.log(`Server is running on port: ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error('MongoDB connection error:', err);
+  });
