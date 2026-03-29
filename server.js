@@ -4,7 +4,7 @@ const path = require('path');
 const http = require('http');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
-const db = require('./db');
+const Seat = require('./models/Seat');
 
 const testimonialsRoutes = require('./routes/testimonials.routes');
 const concertsRoutes = require('./routes/concerts.routes');
@@ -46,9 +46,15 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Not found...' });
 });
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('New socket!');
-  socket.emit('seatsUpdated', db.seats);
+
+  try {
+    const seats = await Seat.find();
+    socket.emit('seatsUpdated', seats);
+  } catch (error) {
+    console.error('Error loading seats for socket connection:', error);
+  }
 
   socket.on('disconnect', () => {
     console.log(`Socket disconnected: ${socket.id}`);
