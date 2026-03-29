@@ -1,72 +1,99 @@
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
-const db = require('../db');
+const Testimonial = require('../models/Testimonial');
 
 const router = express.Router();
 
-router.get('/testimonials', (req, res) => {
-  res.json(db.testimonials);
+router.get('/testimonials', async (req, res) => {
+  try {
+    const testimonials = await Testimonial.find();
+    res.json(testimonials);
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
-router.get('/testimonials/random', (req, res) => {
-  const index = Math.floor(Math.random() * db.testimonials.length);
-  res.json(db.testimonials[index]);
+router.get('/testimonials/random', async (req, res) => {
+  try {
+    const documentsCount = await Testimonial.countDocuments();
+    if (documentsCount <= 0)
+      return res.status(404).json({ message: 'No testimonials to display' });
+
+    const randomDocumentNumber = Math.floor(Math.random() * documentsCount);
+    const randomTestimonial =
+      await Testimonial.findOne().skip(randomDocumentNumber);
+    res.json(randomTestimonial);
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
-router.get('/testimonials/:id', (req, res) => {
-  const id = req.params.id;
-  const item = db.testimonials.find((t) => String(t.id) === id);
-
-  if (!item) {
-    return res.status(404).json({ message: 'Not found' });
+router.get('/testimonials/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const testimonial = await Testimonial.findOne({ id: Number(id) });
+    if (!testimonial)
+      return res.status(404).json({ message: 'Testimonial not found' });
+    res.json(testimonial);
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' });
   }
-
-  res.json(item);
 });
 
-router.post('/testimonials', (req, res) => {
-  const { author, text } = req.body;
+router.post('/testimonials', async (req, res) => {
+  try {
+    const { author, text } = req.body;
+    if (!author || !text)
+      return res.status(400).json({ message: 'author and text required' });
 
-  if (!author || !text) {
-    return res.status(400).json({ message: 'author and text required' });
+    const lastTestimonial = await Testimonial.findOne()
+      .sort({ id: -1 })
+      .select('id -_id');
+
+    const newId = lastTestimonial ? lastTestimonial.id + 1 : 1;
+    const newTestimonial = new Testimonial({ id: newId, author, text });
+    await newTestimonial.save();
+    return res.json({ message: 'OK' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' });
   }
-
-  const newItem = { id: uuidv4(), author, text };
-  db.testimonials.push(newItem);
-
-  res.json({ message: 'OK' });
 });
 
-router.put('/testimonials/:id', (req, res) => {
-  const id = req.params.id;
-  const { author, text } = req.body;
-  const item = db.testimonials.find((t) => String(t.id) === id);
+router.put('/testimonials/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { author, text } = req.body;
 
-  if (!item) {
-    return res.status(404).json({ message: 'Not found' });
+    if (!author || !text) {
+      return res.status(400).json({ message: 'author and text required' });
+    }
+
+    const testimonial = await Testimonial.findOne({ id });
+
+    if (!testimonial) {
+      return res.status(404).json({ message: 'Testimonial not found' });
+    }
+
+    await Testimonial.findByIdAndUpdate(testimonial._id, { author, text });
+
+    return res.json({ message: 'OK' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' });
   }
-
-  if (!author || !text) {
-    return res.status(400).json({ message: 'author and text required' });
-  }
-
-  item.author = author;
-  item.text = text;
-
-  res.json({ message: 'OK' });
 });
 
-router.delete('/testimonials/:id', (req, res) => {
-  const id = req.params.id;
-  const index = db.testimonials.findIndex((t) => String(t.id) === id);
+router.delete('/testimonials/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const deletedTestimonial = await Testimonial.findOneAndDelete({ id });
 
-  if (index === -1) {
-    return res.status(404).json({ message: 'Not found' });
+    if (!deletedTestimonial) {
+      return res.status(404).json({ message: 'Testimonial not found' });
+    }
+
+    return res.json({ message: 'OK' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' });
   }
-
-  db.testimonials.splice(index, 1);
-
-  res.json({ message: 'OK' });
 });
 
 module.exports = router;
