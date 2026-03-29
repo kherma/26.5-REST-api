@@ -14,12 +14,12 @@ router.get('/testimonials', getAllTestimonials);
 
 router.get('/testimonials/random', getRandomTestimonial);
 
-router.get('/testimonials/:id', getTestimonialById);
+router.get('/testimonials/:_id', getTestimonialById);
 
 router.post('/testimonials', createTestimonial);
 
-router.put('/testimonials/:id', updateTestimonial);
+router.put('/testimonials/:_id', updateTestimonial);
 
-router.delete('/testimonials/:id', deleteTestimonial);
+router.delete('/testimonials/:_id', deleteTestimonial);
 
 module.exports = router;

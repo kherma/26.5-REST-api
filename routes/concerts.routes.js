@@ -11,12 +11,12 @@ const router = express.Router();
 
 router.get('/concerts', getAllConcerts);
 
-router.get('/concerts/:id', getConcertById);
+router.get('/concerts/:_id', getConcertById);
 
 router.post('/concerts', createConcert);
 
-router.put('/concerts/:id', updateConcert);
+router.put('/concerts/:_id', updateConcert);
 
-router.delete('/concerts/:id', deleteConcert);
+router.delete('/concerts/:_id', deleteConcert);
 
 module.exports = router;

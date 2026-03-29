@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Testimonial = require('../models/Testimonial');
 
 const getAllTestimonials = async (req, res) => {
@@ -28,8 +29,13 @@ const getRandomTestimonial = async (req, res) => {
 
 const getTestimonialById = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const testimonial = await Testimonial.findOne({ id });
+    const { _id } = req.params;
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Testimonial not found' });
+    }
+
+    const testimonial = await Testimonial.findById(_id);
 
     if (!testimonial) {
       return res.status(404).json({ message: 'Testimonial not found' });
@@ -49,12 +55,7 @@ const createTestimonial = async (req, res) => {
       return res.status(400).json({ message: 'author and text required' });
     }
 
-    const lastTestimonial = await Testimonial.findOne()
-      .sort({ id: -1 })
-      .select('id -_id');
-
-    const newId = lastTestimonial ? lastTestimonial.id + 1 : 1;
-    const newTestimonial = new Testimonial({ id: newId, author, text });
+    const newTestimonial = new Testimonial({ author, text });
 
     await newTestimonial.save();
 
@@ -66,20 +67,24 @@ const createTestimonial = async (req, res) => {
 
 const updateTestimonial = async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const { _id } = req.params;
     const { author, text } = req.body;
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Testimonial not found' });
+    }
 
     if (!author || !text) {
       return res.status(400).json({ message: 'author and text required' });
     }
 
-    const testimonial = await Testimonial.findOne({ id });
+    const testimonial = await Testimonial.findById(_id);
 
     if (!testimonial) {
       return res.status(404).json({ message: 'Testimonial not found' });
     }
 
-    await Testimonial.findByIdAndUpdate(testimonial._id, { author, text });
+    await Testimonial.findByIdAndUpdate(_id, { author, text });
 
     return res.json({ message: 'OK' });
   } catch (error) {
@@ -89,8 +94,13 @@ const updateTestimonial = async (req, res) => {
 
 const deleteTestimonial = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const deletedTestimonial = await Testimonial.findOneAndDelete({ id });
+    const { _id } = req.params;
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Testimonial not found' });
+    }
+
+    const deletedTestimonial = await Testimonial.findByIdAndDelete(_id);
 
     if (!deletedTestimonial) {
       return res.status(404).json({ message: 'Testimonial not found' });

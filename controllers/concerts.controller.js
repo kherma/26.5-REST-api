@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Concert = require('../models/Concert');
 
 const getAllConcerts = async (req, res) => {
@@ -11,8 +12,13 @@ const getAllConcerts = async (req, res) => {
 
 const getConcertById = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const concert = await Concert.findOne({ id });
+    const { _id } = req.params;
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Concert not found' });
+    }
+
+    const concert = await Concert.findById(_id);
 
     if (!concert) {
       return res.status(404).json({ message: 'Concert not found' });
@@ -36,10 +42,7 @@ const createConcert = async (req, res) => {
         .json({ message: 'performer, genre, price, day and image required' });
     }
 
-    const lastConcert = await Concert.findOne().sort({ id: -1 }).select('id -_id');
-    const newId = lastConcert ? lastConcert.id + 1 : 1;
     const newConcert = new Concert({
-      id: newId,
       performer,
       genre,
       price: priceNumber,
@@ -57,11 +60,16 @@ const createConcert = async (req, res) => {
 
 const updateConcert = async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const { _id } = req.params;
     const { performer, genre, price, day, image } = req.body;
     const priceNumber = Number(price);
     const dayNumber = Number(day);
-    const concert = await Concert.findOne({ id });
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Concert not found' });
+    }
+
+    const concert = await Concert.findById(_id);
 
     if (!concert) {
       return res.status(404).json({ message: 'Concert not found' });
@@ -73,7 +81,7 @@ const updateConcert = async (req, res) => {
         .json({ message: 'performer, genre, price, day and image required' });
     }
 
-    await Concert.findByIdAndUpdate(concert._id, {
+    await Concert.findByIdAndUpdate(_id, {
       performer,
       genre,
       price: priceNumber,
@@ -89,8 +97,13 @@ const updateConcert = async (req, res) => {
 
 const deleteConcert = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const deletedConcert = await Concert.findOneAndDelete({ id });
+    const { _id } = req.params;
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Concert not found' });
+    }
+
+    const deletedConcert = await Concert.findByIdAndDelete(_id);
 
     if (!deletedConcert) {
       return res.status(404).json({ message: 'Concert not found' });

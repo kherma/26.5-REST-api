@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
 const concertSchema = new mongoose.Schema({
-  id: {
-    type: Number,
-    required: true,
-    unique: true,
-  },
   performer: {
     type: String,
     required: true,

@@ -11,12 +11,12 @@ const router = express.Router();
 
 router.get('/seats', getAllSeats);
 
-router.get('/seats/:id', getSeatById);
+router.get('/seats/:_id', getSeatById);
 
 router.post('/seats', createSeat);
 
-router.put('/seats/:id', updateSeat);
+router.put('/seats/:_id', updateSeat);
 
-router.delete('/seats/:id', deleteSeat);
+router.delete('/seats/:_id', deleteSeat);
 
 module.exports = router;

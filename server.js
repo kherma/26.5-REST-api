@@ -14,12 +14,35 @@ const app = express();
 const port = process.env.PORT || 8000;
 const mongoUri = 'mongodb://127.0.0.1:27017/NewWaveDB';
 const httpServer = http.createServer(app);
+const collectionsWithLegacyId = ['testimonials', 'concerts', 'seats'];
 const io = new Server(httpServer, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
   },
 });
+
+const cleanupLegacyIdUsage = async () => {
+  for (const collectionName of collectionsWithLegacyId) {
+    const collection = mongoose.connection.collection(collectionName);
+    const indexes = await collection.indexes();
+    const hasLegacyIdIndex = indexes.some((index) => index.name === 'id_1');
+
+    if (hasLegacyIdIndex) {
+      await collection.dropIndex('id_1');
+      console.log(`Dropped legacy index id_1 from ${collectionName}`);
+    }
+
+    const result = await collection.updateMany(
+      { id: { $exists: true } },
+      { $unset: { id: '' } }
+    );
+
+    if (result.modifiedCount > 0) {
+      console.log(`Removed legacy id field from ${result.modifiedCount} docs in ${collectionName}`);
+    }
+  }
+};
 
 app.use(cors());
 app.use(express.json());
@@ -63,8 +86,9 @@ io.on('connection', async (socket) => {
 
 mongoose
   .connect(mongoUri)
-  .then(() => {
+  .then(async () => {
     console.log(`Connected to MongoDB: ${mongoUri}`);
+    await cleanupLegacyIdUsage();
     httpServer.listen(port, () => {
       console.log(`Server is running on port: ${port}`);
     });

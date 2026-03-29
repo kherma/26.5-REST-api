@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Seat = require('../models/Seat');
 
 const isSlotTaken = async (day, seatNumber, excludedId = null) => {
@@ -7,7 +8,7 @@ const isSlotTaken = async (day, seatNumber, excludedId = null) => {
   };
 
   if (excludedId !== null) {
-    query.id = { $ne: excludedId };
+    query._id = { $ne: excludedId };
   }
 
   const existingSeat = await Seat.findOne(query);
@@ -26,8 +27,13 @@ const getAllSeats = async (req, res) => {
 
 const getSeatById = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const seat = await Seat.findOne({ id });
+    const { _id } = req.params;
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Seat not found' });
+    }
+
+    const seat = await Seat.findById(_id);
 
     if (!seat) {
       return res.status(404).json({ message: 'Seat not found' });
@@ -55,10 +61,7 @@ const createSeat = async (req, res) => {
       return res.status(409).json({ message: 'The slot is already taken...' });
     }
 
-    const lastSeat = await Seat.findOne().sort({ id: -1 }).select('id -_id');
-    const newId = lastSeat ? lastSeat.id + 1 : 1;
     const newSeat = new Seat({
-      id: newId,
       day: dayNumber,
       seat: seatNumber,
       client,
@@ -80,11 +83,16 @@ const createSeat = async (req, res) => {
 
 const updateSeat = async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const { _id } = req.params;
     const { day, seat, client, email } = req.body;
     const dayNumber = Number(day);
     const seatNumber = Number(seat);
-    const existingSeat = await Seat.findOne({ id });
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Seat not found' });
+    }
+
+    const existingSeat = await Seat.findById(_id);
 
     if (!existingSeat) {
       return res.status(404).json({ message: 'Seat not found' });
@@ -96,11 +104,11 @@ const updateSeat = async (req, res) => {
         .json({ message: 'day, seat, client and email required' });
     }
 
-    if (await isSlotTaken(dayNumber, seatNumber, id)) {
+    if (await isSlotTaken(dayNumber, seatNumber, _id)) {
       return res.status(409).json({ message: 'The slot is already taken...' });
     }
 
-    await Seat.findByIdAndUpdate(existingSeat._id, {
+    await Seat.findByIdAndUpdate(_id, {
       day: dayNumber,
       seat: seatNumber,
       client,
@@ -115,8 +123,13 @@ const updateSeat = async (req, res) => {
 
 const deleteSeat = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const deletedSeat = await Seat.findOneAndDelete({ id });
+    const { _id } = req.params;
+
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Seat not found' });
+    }
+
+    const deletedSeat = await Seat.findByIdAndDelete(_id);
 
     if (!deletedSeat) {
       return res.status(404).json({ message: 'Seat not found' });
