@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -12,7 +14,8 @@ const seatsRoutes = require('./routes/seats.routes');
 
 const app = express();
 const port = process.env.PORT || 8000;
-const mongoUri = 'mongodb://127.0.0.1:27017/NewWaveDB';
+const mongoUri = process.env.MONGO_URI;
+const mongoDbName = process.env.MONGO_DB_NAME || 'NewWaveDB';
 const httpServer = http.createServer(app);
 const collectionsWithLegacyId = ['testimonials', 'concerts', 'seats'];
 const io = new Server(httpServer, {
@@ -35,14 +38,20 @@ const cleanupLegacyIdUsage = async () => {
 
     const result = await collection.updateMany(
       { id: { $exists: true } },
-      { $unset: { id: '' } }
+      { $unset: { id: '' } },
     );
 
     if (result.modifiedCount > 0) {
-      console.log(`Removed legacy id field from ${result.modifiedCount} docs in ${collectionName}`);
+      console.log(
+        `Removed legacy id field from ${result.modifiedCount} docs in ${collectionName}`,
+      );
     }
   }
 };
+
+if (!mongoUri) {
+  throw new Error('MONGO_URI environment variable is required');
+}
 
 app.use(cors());
 app.use(express.json());
@@ -85,9 +94,9 @@ io.on('connection', async (socket) => {
 });
 
 mongoose
-  .connect(mongoUri)
+  .connect(mongoUri, { dbName: mongoDbName })
   .then(async () => {
-    console.log(`Connected to MongoDB: ${mongoUri}`);
+    console.log(`Connected to MongoDB database: ${mongoDbName}`);
     await cleanupLegacyIdUsage();
     httpServer.listen(port, () => {
       console.log(`Server is running on port: ${port}`);
