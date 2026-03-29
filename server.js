@@ -17,37 +17,12 @@ const port = process.env.PORT || 8000;
 const mongoUri = process.env.MONGO_URI;
 const mongoDbName = process.env.MONGO_DB_NAME || 'NewWaveDB';
 const httpServer = http.createServer(app);
-const collectionsWithLegacyId = ['testimonials', 'concerts', 'seats'];
 const io = new Server(httpServer, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
   },
 });
-
-const cleanupLegacyIdUsage = async () => {
-  for (const collectionName of collectionsWithLegacyId) {
-    const collection = mongoose.connection.collection(collectionName);
-    const indexes = await collection.indexes();
-    const hasLegacyIdIndex = indexes.some((index) => index.name === 'id_1');
-
-    if (hasLegacyIdIndex) {
-      await collection.dropIndex('id_1');
-      console.log(`Dropped legacy index id_1 from ${collectionName}`);
-    }
-
-    const result = await collection.updateMany(
-      { id: { $exists: true } },
-      { $unset: { id: '' } },
-    );
-
-    if (result.modifiedCount > 0) {
-      console.log(
-        `Removed legacy id field from ${result.modifiedCount} docs in ${collectionName}`,
-      );
-    }
-  }
-};
 
 if (!mongoUri) {
   throw new Error('MONGO_URI environment variable is required');
@@ -97,7 +72,6 @@ mongoose
   .connect(mongoUri, { dbName: mongoDbName })
   .then(async () => {
     console.log(`Connected to MongoDB database: ${mongoDbName}`);
-    await cleanupLegacyIdUsage();
     httpServer.listen(port, () => {
       console.log(`Server is running on port: ${port}`);
     });
